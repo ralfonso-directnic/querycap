@@ -146,6 +146,17 @@ func handleQuery(qry string){
 
         }
 
+        skip:=[]string{"information_schema","performance_schema","mysql"}
+
+        for _,s:= range skip {
+
+                if (query.Database==s) {
+
+                        return
+
+                }
+        }
+
         log.Printf("%s %s\n",query.Database,query.TableName)
         go qryTotal.Inc()
         go qryDbTable.WithLabelValues(query.Database,query.TableName).Inc()
