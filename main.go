@@ -7,10 +7,12 @@ import (
         "github.com/google/gopacket/pcap"
         "flag"
         "github.com/ralfonso-directnic/sqlparser"
+        "github.com/ralfonso-directnic/sqlparser/query"
         "strings"
         "log"
         "os"
         "io"
+        "regexp"
 )
 
 var device string
@@ -115,6 +117,8 @@ func handleQuery(qry string){
 
         //parser chokes on order by
 
+        qry_orig := qry
+
         parts:=strings.SplitN(qry,"ORDER",2)
 
         qry = parts[0]
@@ -130,19 +134,70 @@ func handleQuery(qry string){
         qry=strings.Replace(qry,"(","",-1)
         qry=strings.Replace(qry,")","",-1)
 
-
-
         //fix for non quoted value
         qry = strings.Replace(qry,"= ?",`= ''`,-1)
         qry = strings.Replace(qry,"=?",`= ''`,-1)
 
         query, err := sqlparser.Parse(qry)
         if err != nil {
+                //fallback
+               query = fallbackQueryHandle(qry_orig)
+
+
         }
 
         log.Printf("%s %s\n",query.Database,query.TableName)
         go qryTotal.Inc()
         go qryDbTable.WithLabelValues(query.Database,query.TableName).Inc()
+
+}
+
+func fallbackQueryHandle(qry string) (query.Query){
+
+        var q query.Query
+
+        check_regex:=[]string{`FROM (.[^\s]*)`,`UPDATE (.[^\s]*)`,`INSERT INTO (.[^\s]*)`}
+
+        for _,reraw := range check_regex {
+
+                re := regexp.MustCompile(reraw)
+                parts := re.FindStringSubmatch(qry)
+
+                if (len(parts) > 1) {
+
+                        item := parts[1]
+
+                        item = strings.ReplaceAll(item, "`", "")
+                        item = strings.ReplaceAll(item, "'", "")
+                        item = strings.ReplaceAll(item, `"`, "")
+
+                        tbl_parts := strings.Split(item,".")
+
+                        if(len(tbl_parts)==2){
+
+
+
+                                q.Database = tbl_parts[0]
+                                q.TableName = tbl_parts[1]
+
+
+                        }else{
+
+
+                               q.TableName=item
+                        }
+
+                        //split up!
+                        break
+
+                }
+
+        }
+
+        return q
+
+
+
 
 }
 
