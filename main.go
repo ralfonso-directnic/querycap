@@ -146,14 +146,12 @@ func handleQuery(qry string){
 
         }
 
-        skip:=[]string{"INFORMATION_SCHEMA","PERFORMNANCE_SCHEMA","information_schema","performance_schema","mysql"}
+        skip:=[]string{"INFORMATION_SCHEMA","PERFORMANCE_SCHEMA","information_schema","performance_schema","mysql"}
 
         for _,s:= range skip {
 
                 if (query.Database==s) {
-
                         return
-
                 }
         }
 
