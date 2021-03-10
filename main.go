@@ -146,7 +146,7 @@ func handleQuery(qry string){
 
         }
 
-        skip:=[]string{"information_schema","performance_schema","mysql"}
+        skip:=[]string{"INFORMATION_SCHEMA","PERFORMNANCE_SCHEMA","information_schema","performance_schema","mysql"}
 
         for _,s:= range skip {
 
@@ -157,7 +157,13 @@ func handleQuery(qry string){
                 }
         }
 
-        log.Printf("%s %s\n",query.Database,query.TableName)
+        if(len(query.Database)<1 && len(query.TableName)>1){
+                log.Printf("ERROR: unparseable query: %s\n",qry_orig)
+                return
+
+        }
+
+        log.Printf("ENTRY: %s %s\n",query.Database,query.TableName)
         go qryTotal.Inc()
         go qryDbTable.WithLabelValues(query.Database,query.TableName).Inc()
 
